@@ -266,6 +266,16 @@ elif [ "$1" == "POSTPROCESS" ]; then
 	echo "POSTPROCESS OK"
 	exit 0
 
+elif [ $# -eq 0 ]
+        then
+        echo "-------------"
+        echo "USAGE"
+        echo "./checkfits.sh arg1 arg2"
+        echo "where arg1 in [CHECK,VALID,VERIFY,PREPROCESS]"    
+        echo "where arg2 is a filename in FITS format"
+        echo "-------------"
+        exit 0
+
 else
 
 	#: Section	: DEFAULT

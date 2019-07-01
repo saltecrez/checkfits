@@ -159,6 +159,26 @@ elif [ "$1" == "PREPROCESS" ]; then
 		#Change file and permission before processing
 		/usr/bin/sudo -n /bin/chmod u+rw $file
 
+
+		#Copy files to test machine archive-new.mountain.lbto.org
+		RD=/mnt/newdata
+		ID=~/.ssh/id_rsa
+		USER=controls
+		HOST=archive-new.mountain.lbto.org
+		#Copy luci
+		if [[ "${file_name,,}" =~ ^.*luci.*\.(fits|fit|fts).*$ ]]; then
+			scp -ri $ID $file $USER@$HOST:$RD
+		fi
+		#Copy mods
+                if [[ "${file_name,,}" =~ ^.*mods.*\.(fits|fit|fts).*$ ]]; then
+                        scp -ri $ID $file $USER@$HOST:$RD
+                fi
+		#Copy lbc
+		if [[ "${file_name,,}" =~ ^.*lbc.*\.(fits|fit|fts).*$ ]]; then
+                        scp -ri $ID $file $USER@$HOST:$RD
+                fi
+
+
 		#Check regular expression for luci files
 		if [[ "${file_name,,}" =~ ^.*luci.*\.(fits|fit|fts).*$ ]]; then
 

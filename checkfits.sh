@@ -100,13 +100,13 @@ elif [ "$1" == "VERIFY" ]; then
 
 	#if fits verify tools exists -> fatal
 	if [ ! -x $VERIFY_TOOL ]; then
-		echo "VERIFY FATAL : verify tools not exists"
+		echo "VERIFY FATAL : verify tool does not exist"
 		exit 0
 	fi
 
 	#if fits file not exists -> fatal
 	if [ ! -f $file ]; then
-		echo "VERIFY FATAL : file not exists"
+		echo "VERIFY FATAL : file does not exist"
 		exit 0
 	fi
 
@@ -164,19 +164,19 @@ elif [ "$1" == "PREPROCESS" ]; then
 
 			#if listhead tools exists -> fatal
 			if [ ! -x $LISTHEAD_TOOL ]; then
-				echo "PREPROCESS FATAL : listhead tools not exists"
+				echo "PREPROCESS FATAL : listhead tool does not exist"
 				exit 0
 			fi
 
 			#if modhead tools exists -> fatal
 			if [ ! -x $MODHEAD_TOOL ]; then
-				echo "PREPROCESS FATAL : listhead tools not exists"
+				echo "PREPROCESS FATAL : listhead tool does not exist"
 				exit 0
 			fi
 
 			#if fits file not exists -> fatal
 			if [ ! -f $file ]; then
-				echo "PREPROCESS FATAL : file not exists"
+				echo "PREPROCESS FATAL : file does not exist"
 				exit 0
 			fi
 
@@ -198,19 +198,19 @@ elif [ "$1" == "PREPROCESS" ]; then
 
 			#if listhead tools exists -> fatal
 			if [ ! -x $LISTHEAD_TOOL ]; then
-				echo "PREPROCESS FATAL : listhead tools not exists"
+				echo "PREPROCESS FATAL : listhead tool does not exist"
 				exit 0
 			fi
 
 			#if modhead tools exists -> fatal
 			if [ ! -x $MODHEAD_TOOL ]; then
-				echo "PREPROCESS FATAL : listhead tools not exists"
+				echo "PREPROCESS FATAL : listhead tool does not exist"
 				exit 0
 			fi
 
 			#if fits file not exists -> fatal
 			if [ ! -f $file ]; then
-				echo "PREPROCESS FATAL : file not exists"
+				echo "PREPROCESS FATAL : file does not exist"
 				exit 0
 			fi
 
@@ -255,12 +255,12 @@ elif [ "$1" == "POSTPROCESS" ]; then
 
 	#Post process verified WAIT files
 	if [ "$verified" == "WAIT" ]; then
-		echo "New data file $file_name has reached a wait eof timeout" | mutt -s "Pre process log" scienceops@lbto.org -c ia2-lbt-log@oats.inaf.it
+		echo "New data file $file_name has reached a wait eof timeout" | mutt -s "Pre-process log" sciops@lbto.org -c ia2-lbt-log@oats.inaf.it
 	fi
 
 	#Post process verified FATAL files
 	if [ "$verified" == "FATAL" ]; then
-		echo "New data file $file_name has fatal error" | mutt -s "Pre process log" scienceops@lbto.org -c ia2-lbt-log@oats.inaf.it
+		echo "New data file $file_name has fatal error" | mutt -s "Pre-process log" sciops@lbto.org -c ia2-lbt-log@oats.inaf.it
 	fi
 
 	echo "POSTPROCESS OK"

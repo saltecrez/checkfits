@@ -189,10 +189,8 @@ elif [ "$1" == "PREPROCESS" ]; then
 			fi
 
 			#
-			scanlen=`$LISTHEAD_TOOL $file 2>&1 | grep -i SCANLEN | cut -d ' ' -f 18`
-			filelength=`$VAP_TOOL -nc length $file | cut -d ' ' -f 4`
-			$MODHEAD_TOOL $file SCANLEN $filelength &>/dev/null
-			echo $filelength
+			obslength=`$VAP_TOOL -nc length $file | cut -d ' ' -f 4`
+			$MODHEAD_TOOL $file SCANLEN $obslength &>/dev/null
 
 		fi
 

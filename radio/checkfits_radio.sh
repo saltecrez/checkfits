@@ -186,6 +186,8 @@ elif [ "$1" == "PREPROCESS" ]; then
 			ref_freq=5000.0  # MHz
 			if [ "$obsfreq < $ref_freq" ]; then
 				$MODHEAD_TOOL $file FD_POLN LIN &>/dev/null
+			else
+				$MODHEAD_TOOL $file FD_POLN CIRC &>/dev/null
 			fi
 
 			#

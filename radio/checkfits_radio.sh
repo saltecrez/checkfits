@@ -11,6 +11,9 @@ VERIFY_TOOL="/usr/local/bin/fitsverify"
 LISTHEAD_TOOL="/usr/local/bin/listhead"
 MODHEAD_TOOL="/usr/local/bin/modhead"
 VAP_TOOL="/home/controls/psrchive/bin/vap"
+FITSDIFF_TOOL="/usr/local/bin/fitsdiff"
+CMP_DIR="/home/controls/test_preprocessing/staging/"
+EMAIL="elisa.londero@inaf.it"
 
 if [ "$1" == "CHECK" ]; then
 
@@ -53,6 +56,17 @@ if [ "$1" == "CHECK" ]; then
 		exit 0
 	fi
 
+        #Check fitsdiff tools
+        CHECK_STRING="usage: fitsdiff"
+
+        res=$($FITSDIFF_TOOL 2>&1)
+
+        check=$(echo $res | grep "$CHECK_STRING" | wc | awk '{print $1}')
+        if [ "$check" -lt "1" ]; then
+                echo "CHECK FATAL"
+                exit 0
+        fi
+
 	echo "CHECK OK"
 	exit 0
 
@@ -68,7 +82,7 @@ elif [ "$1" == "VALID" ]; then
 	file_name=${file##*/}
 
 	#Check regex for rsync temporary file -> ignore
-	if [[ ! "${file_name,,}" =~ ^[^\.].*\.(fits|fit|fts|rf).*$ ]]; then
+	if [[ ! "${file_name,,}" =~ ^[^\.].*\.(fits|fit|fts|rf|cf|sf).*$ ]]; then
 		echo "VALID IGNORE: invalid regular expression"
 		exit 0
 	fi
@@ -146,7 +160,7 @@ elif [ "$1" == "PREPROCESS" ]; then
 		exit 0
 	fi
 
-	#Pre processing for verified OK files
+	#Pre processing for verified OK pulsar files
 	if [ "$verified" == "OK" ]; then
 
 		#Change file ownership
@@ -154,49 +168,66 @@ elif [ "$1" == "PREPROCESS" ]; then
 		#Change file and permission before processing
 		/bin/chmod u+rw $file
 
-		#Check regular expression for .rf pulsar files
-		if [[ "${file_name,,}" =~ ^.*\.(rf).*$ ]]; then	
+                #if listhead tools exists -> fatal
+                if [ ! -x $LISTHEAD_TOOL ]; then
+                        echo "PREPROCESS FATAL : listhead tool does not exist"
+                        exit 0
+                fi
 
-                        #if listhead tools exists -> fatal
-                        if [ ! -x $LISTHEAD_TOOL ]; then
-                                echo "PREPROCESS FATAL : listhead tool does not exist"
-                                exit 0
-                        fi
+                #if modhead tools exists -> fatal
+                if [ ! -x $MODHEAD_TOOL ]; then
+                        echo "PREPROCESS FATAL : modhead tool does not exist"
+                        exit 0
+                fi
 
-                        #if modhead tools exists -> fatal
-                        if [ ! -x $MODHEAD_TOOL ]; then
-                                echo "PREPROCESS FATAL : listhead tool does not exist"
-                                exit 0
-                        fi
+                #if vap tool exists -> fatal
+                if [ ! -x $VAP_TOOL ]; then
+                        echo "PREPROCESS FATAL : vap tool does not exist"
+                        exit 0
+                fi
 
-                        #if vap tool exists -> fatal
-                        if [ ! -x $VAP_TOOL ]; then
-                                echo "PREPROCESS FATAL : vap tool does not exist"
-                                exit 0
-                        fi
+                #if fitsdiff tool exists -> fatal
+                if [ ! -x $FITSDIFF_TOOL ]; then
+                        echo "PREPROCESS FATAL : fitsdiff tool does not exist"
+                        exit 0
+                fi
 
-                        #if fits file not exists -> fatal
-                        if [ ! -f $file ]; then
-                                echo "PREPROCESS FATAL : file does not exist"
-                                exit 0
-                        fi
+                #if fits file not exists -> fatal
+                if [ ! -f $file ]; then
+                        echo "PREPROCESS FATAL : file does not exist"
+                        exit 0
+                fi
 
-			# check center freq and change to LIN if < 5GHz
-                        obsfreq=`$LISTHEAD_TOOL $file 2>&1 | grep -i OBSFREQ | cut -d ' ' -f 18`
-			ref_freq=5000.0  # MHz
-			if [ "$obsfreq < $ref_freq" ]; then
-				$MODHEAD_TOOL $file FD_POLN LIN &>/dev/null
-			else
-				$MODHEAD_TOOL $file FD_POLN CIRC &>/dev/null
-			fi
+		# copy to staging area
+		cp $file $CMP_DIR
 
-			#
-			obslength=`$VAP_TOOL -nc length $file | cut -d ' ' -f 4`
-			$MODHEAD_TOOL $file SCANLEN $obslength &>/dev/null
+	        # check center freq and change to LIN if < 5GHz
+                obsfreq=`$LISTHEAD_TOOL $file 2>&1 | grep -i OBSFREQ | cut -d ' ' -f 18`
+	        ref_freq=5000.0  # MHz
+	        if [ "$obsfreq < $ref_freq" ]; then
+	    		$MODHEAD_TOOL $file FD_POLN LIN &>/dev/null
+	        else
+	    		$MODHEAD_TOOL $file FD_POLN CIRC &>/dev/null
+	        fi
 
+	        # calculate observation length and insert into SCANLEN
+	        obslength=`$VAP_TOOL -nc length $file | cut -d ' ' -f 4`
+	        $MODHEAD_TOOL $file SCANLEN $obslength &>/dev/null
+
+		# check if the datasum of the reference and modified file are the same
+		CHECK_STRING="Data contains differences"
+		res=$($FITSDIFF_TOOL $file $CMP_DIR$file_name 2>&1)
+		check=$(echo $res | grep "$CHECK_STRING" | wc | awk '{print $1}')
+		if [ "$check" -eq "1" ]; then
+			echo "DATASUM CHECK FATAL"
+			echo "DATASUM of file $file_name [newdata folder] does not match DATASUM of file $CMP_DIR$file_name [staging area]" | mutt -s "Severe: pulsar DATASUM mismatch" $EMAIL 
+	                exit 0
+		elif [ "$check" -eq "0" ]; then
+			rm $CMP_DIR$file_name
 		fi
 
 	fi #verified ok files
+
 
 	echo "PREPROCESS OK"
 	exit 0
@@ -223,12 +254,12 @@ elif [ "$1" == "POSTPROCESS" ]; then
 
 	#Post process verified WAIT files
 	if [ "$verified" == "WAIT" ]; then
-		echo "New data file $file_name has reached a wait eof timeout" | mutt -s "Pre-process log" elisa.londero@inaf.it 
+		echo "New data file $file_name has reached a wait eof timeout" | mutt -s "Pre-process log" $EMAIL 
 	fi
 
 	#Post process verified FATAL files
 	if [ "$verified" == "FATAL" ]; then
-		echo "New data file $file_name has fatal error" | mutt -s "Pre-process log" elisa.londero@inaf.it 
+		echo "New data file $file_name has fatal error" | mutt -s "Pre-process log" $EMAIL 
 	fi
 
 	echo "POSTPROCESS OK"

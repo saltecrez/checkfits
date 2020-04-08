@@ -3,7 +3,7 @@
 #: Title	: checkfits_radio.sh 
 #: Date		: 2014/10/28
 #: Author	: "Marco De Marco" <demarco@oats.inaf.it>
-#: Revision     : "Elisa Londero" <elia.londero@inaf.it> - 2020/04/08
+#: Revision     : "Elisa Londero" <elisa.londero@inaf.it> - 2020/04/08
 #: Version	: 2.0
 #: Description	: Fits verification and proccessing script
 
@@ -202,29 +202,39 @@ elif [ "$1" == "PREPROCESS" ]; then
 		# copy to staging area
 		cp $file $CMP_DIR
 
-	        # check center freq and change to LIN if < 5GHz
-                obsfreq=`$LISTHEAD_TOOL $file 2>&1 | grep -i OBSFREQ | cut -d ' ' -f 18`
-	        ref_freq=5000.0  # MHz
-	        if [ "$obsfreq < $ref_freq" ]; then
-	    		$MODHEAD_TOOL $file FD_POLN LIN &>/dev/null
-	        else
-	    		$MODHEAD_TOOL $file FD_POLN CIRC &>/dev/null
-	        fi
-
-	        # calculate observation length and insert into SCANLEN
-	        obslength=`$VAP_TOOL -nc length $file | cut -d ' ' -f 4`
-	        $MODHEAD_TOOL $file SCANLEN $obslength &>/dev/null
-
-		# check if the datasum of the reference and modified file are the same
-		CHECK_STRING="Data contains differences"
+		# checksum comparison
+		CHECK_STRING="No differences found."
 		res=$($FITSDIFF_TOOL $file $CMP_DIR$file_name 2>&1)
 		check=$(echo $res | grep "$CHECK_STRING" | wc | awk '{print $1}')
-		if [ "$check" -eq "1" ]; then
-			echo "DATASUM CHECK FATAL"
-			echo "DATASUM of file $file_name [newdata folder] does not match DATASUM of file $CMP_DIR$file_name [staging area]" | mutt -s "Severe: pulsar DATASUM mismatch" $EMAIL 
-	                exit 0
-		elif [ "$check" -eq "0" ]; then
-			rm $CMP_DIR$file_name
+		if [ "$check" -eq "1" ]; then		
+
+		        # check center freq and change to LIN if < 5GHz
+	                obsfreq=`$LISTHEAD_TOOL $file 2>&1 | grep -i OBSFREQ | cut -d ' ' -f 18`
+		        ref_freq=5000.0  # MHz
+		        if [ "$obsfreq < $ref_freq" ]; then
+		    		$MODHEAD_TOOL $file FD_POLN LIN &>/dev/null
+		        else
+		    		$MODHEAD_TOOL $file FD_POLN CIRC &>/dev/null
+		        fi
+	
+		        # calculate observation length and insert into SCANLEN
+		        obslength=`$VAP_TOOL -nc length $file | cut -d ' ' -f 4`
+		        $MODHEAD_TOOL $file SCANLEN $obslength &>/dev/null
+	
+			# check if the datasum of the reference and modified file are the same
+			CHECK_STRING="Data contains differences"
+			res=$($FITSDIFF_TOOL $file $CMP_DIR$file_name 2>&1)
+			check=$(echo $res | grep "$CHECK_STRING" | wc | awk '{print $1}')
+			if [ "$check" -eq "1" ]; then
+				echo "DATASUM CHECK FATAL"
+				echo "DATASUM of file $file_name [newdata folder] does not match DATASUM of file $CMP_DIR$file_name [staging area]" | mutt -s "Severe: pulsar DATASUM mismatch" $EMAIL 
+		                exit 0
+			elif [ "$check" -eq "0" ]; then
+				rm $CMP_DIR$file_name
+			fi
+		else
+			echo "PREPROCESS FATAL : file copy from newdata to staging area did not succeed"
+			exit 0
 		fi
 
 	fi #verified ok files

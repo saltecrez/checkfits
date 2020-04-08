@@ -1,8 +1,9 @@
 #!/bin/bash
 
-#: Title	: checkfits.sh radio
+#: Title	: checkfits_radio.sh 
 #: Date		: 2014/10/28
 #: Author	: "Marco De Marco" <demarco@oats.inaf.it>
+#: Revision     : "Elisa Londero" <elia.londero@inaf.it> - 2020/04/08
 #: Version	: 2.0
 #: Description	: Fits verification and proccessing script
 
